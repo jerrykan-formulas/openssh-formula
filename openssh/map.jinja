@@ -16,6 +16,9 @@ that differ from whats in defaults.yaml
       'server': 'openssh-server',
       'client': 'openssh-client',
       'service': 'ssh',
+
+      'ssh_config_src': 'salt://openssh/files/debian8/ssh_config.jinja',
+      'sshd_config_src': 'salt://openssh/files/debian8/sshd_config.jinja',
     },
     'FreeBSD': {
       'service': 'sshd',
@@ -37,6 +40,9 @@ that differ from whats in defaults.yaml
       'client': 'openssh-clients',
       'service': 'sshd',
       'dig_pkg': 'bind-utils',
+
+      'ssh_config_src': 'salt://openssh/files/centos7/ssh_config.jinja',
+      'sshd_config_src': 'salt://openssh/files/centos7/sshd_config.jinja',
     },
     'Suse': {
       'server': 'openssh',
