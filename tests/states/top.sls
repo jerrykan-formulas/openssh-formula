@@ -1,0 +1,4 @@
+base:
+  '*':
+    - openssh
+    - openssh.config
