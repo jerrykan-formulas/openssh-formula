@@ -1,6 +1,17 @@
 {## Start with  defaults from defaults.yaml ##}
 {% import_yaml "openssh/defaults.yaml" as default_settings %}
 
+{%- set distro_release = salt['grains.get']('osmajorrelease') -%}
+{%- set release_dir = {
+    'Debian': {
+        '8': 'debian8',
+        '9': 'debian9',
+    }.get(distro_release, 'debian9'),
+    'RedHat': {
+        '7': 'centos7',
+    }.get(distro_release, 'centos7'),
+}.get(salt['grains.get']('os_family')) -%}
+
 {## 
 Setup variable using grains['os_family'] based logic, only add key:values here
 that differ from whats in defaults.yaml
@@ -17,8 +28,8 @@ that differ from whats in defaults.yaml
       'client': 'openssh-client',
       'service': 'ssh',
 
-      'ssh_config_src': 'salt://openssh/files/debian8/ssh_config.jinja',
-      'sshd_config_src': 'salt://openssh/files/debian8/sshd_config.jinja',
+      'ssh_config_src': 'salt://openssh/files/{}/ssh_config.jinja'.format(release_dir),
+      'sshd_config_src': 'salt://openssh/files/{}/sshd_config.jinja'.format(release_dir),
     },
     'FreeBSD': {
       'service': 'sshd',
@@ -41,8 +52,8 @@ that differ from whats in defaults.yaml
       'service': 'sshd',
       'dig_pkg': 'bind-utils',
 
-      'ssh_config_src': 'salt://openssh/files/centos7/ssh_config.jinja',
-      'sshd_config_src': 'salt://openssh/files/centos7/sshd_config.jinja',
+      'ssh_config_src': 'salt://openssh/files/{}/ssh_config.jinja'.format(release_dir),
+      'sshd_config_src': 'salt://openssh/files/{}/sshd_config.jinja'.format(release_dir),
     },
     'Suse': {
       'server': 'openssh',
