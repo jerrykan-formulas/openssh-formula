@@ -61,7 +61,7 @@ PermitRootLogin {{ sshd_config.get('PermitRootLogin', 'prohibit-password') }}
 
 # Change to yes to enable challenge-response passwords (beware issues with
 # some PAM modules and threads)
-ChallengeResponseAuthentication no
+ChallengeResponseAuthentication {{ sshd_config.get('ChallengeResponseAuthentication', 'no') }}
 
 # Kerberos options
 #KerberosAuthentication no
