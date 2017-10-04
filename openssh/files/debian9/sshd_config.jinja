@@ -1,4 +1,31 @@
 {%- from "openssh/map.jinja" import sshd_config with context -%}
+
+{%- macro option_impl(name, value, comment) -%}
+    {%- if comment -%}
+        #
+    {%- endif -%}
+    {{- name ~ ' ' -}}
+    {%- if value is sameas true -%}
+        yes
+    {%- elif value is sameas false -%}
+        no
+    {%- else -%}
+        {{ value }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro option(name, default, comment=False) -%}
+    {%- set value = sshd_config.get(name, default) -%}
+
+    {%- if value is iterable and value is not string -%}
+        {%- for val in value -%}
+            {{ option_impl(name, val, comment) ~ '\n' }}
+        {%- endfor -%}
+    {%- else -%}
+        {{ option_impl(name, value, comment) }}
+    {%- endif %}
+{%- endmacro -%}
+
 # This file is managed by salt. Manual changes risk being overwritten.
 
 #	$OpenBSD: sshd_config,v 1.100 2016/08/15 12:32:04 naddy Exp $
@@ -13,66 +40,68 @@
 # possible, but leave them commented.  Uncommented options override the
 # default value.
 
-#Port 22
-#AddressFamily any
-#ListenAddress 0.0.0.0
-#ListenAddress ::
-
-#HostKey /etc/ssh/ssh_host_rsa_key
-#HostKey /etc/ssh/ssh_host_ecdsa_key
-#HostKey /etc/ssh/ssh_host_ed25519_key
-
+{{ option('Port', 22, comment=True) }}
+{{ option('AddressFamily', 'any', comment=True) }}
+{{ option('ListenAddress', [
+    '0.0.0.0',
+    '::',
+], comment=True) }}
+{{ option('HostKey', [
+    '/etc/ssh/ssh_host_rsa_key',
+    '/etc/ssh/ssh_host_ecdsa_key',
+    '/etc/ssh/ssh_host_ed25519_key',
+], comment=True) }}
 # Ciphers and keying
-#RekeyLimit default none
+{{ option('RekeyLimit', 'default none', comment=True) }}
 
 # Logging
-#SyslogFacility AUTH
-#LogLevel INFO
+{{ option('SyslogFacility', 'AUTH', comment=True) }}
+{{ option('LogLevel', 'INFO', comment=True) }}
 
 # Authentication:
 
-#LoginGraceTime 2m
-PermitRootLogin {{ sshd_config.get('PermitRootLogin', 'prohibit-password') }}
-#StrictModes yes
-#MaxAuthTries 6
-#MaxSessions 10
+{{ option('LoginGraceTime', '2m', comment=True) }}
+{{ option('PermitRootLogin', 'prohibit-password', comment=True) }}
+{{ option('StrictModes', True, comment=True) }}
+{{ option('MaxAuthTries', 6, comment=True) }}
+{{ option('MaxSessions', 10, comment=True) }}
 
-#PubkeyAuthentication yes
+{{ option('PubkeyAuthentication', True, comment=True) }}
 
 # Expect .ssh/authorized_keys2 to be disregarded by default in future.
-#AuthorizedKeysFile	.ssh/authorized_keys .ssh/authorized_keys2
+{{ option('AuthorizedKeysFile', '.ssh/authorized_keys .ssh/authorized_keys2', comment=True) }}
 
-#AuthorizedPrincipalsFile none
+{{ option('AuthorizedPrincipalsFile', 'none', comment=True) }}
 
-#AuthorizedKeysCommand none
-#AuthorizedKeysCommandUser nobody
+{{ option('AuthorizedKeysCommand', 'none', comment=True) }}
+{{ option('AuthorizedKeysCommandUser', 'nobody', comment=True) }}
 
 # For this to work you will also need host keys in /etc/ssh/ssh_known_hosts
-#HostbasedAuthentication no
+{{ option('HostbasedAuthentication', False, comment=True) }}
 # Change to yes if you don't trust ~/.ssh/known_hosts for
 # HostbasedAuthentication
-#IgnoreUserKnownHosts no
+{{ option('IgnoreUserKnownHosts', False, comment=True) }}
 # Don't read the user's ~/.rhosts and ~/.shosts files
-#IgnoreRhosts yes
+{{ option('IgnoreRhosts', True, comment=True) }}
 
 # To disable tunneled clear text passwords, change to no here!
-#PasswordAuthentication yes
-#PermitEmptyPasswords no
+{{ option('PasswordAuthentication', True, comment=True) }}
+{{ option('PermitEmptyPasswords', False, comment=True) }}
 
 # Change to yes to enable challenge-response passwords (beware issues with
 # some PAM modules and threads)
-ChallengeResponseAuthentication {{ sshd_config.get('ChallengeResponseAuthentication', 'no') }}
+{{ option('ChallengeResponseAuthentication', False) }}
 
 # Kerberos options
 #KerberosAuthentication no
-#KerberosOrLocalPasswd yes
-#KerberosTicketCleanup yes
+{{ option('KerberosOrLocalPasswd', True, comment=True) }}
+{{ option('KerberosTicketCleanup', True, comment=True) }}
 #KerberosGetAFSToken no
 
 # GSSAPI options
-GSSAPIAuthentication {{ sshd_config.get('GSSAPIAuthentication', 'no') }}
-GSSAPICleanupCredentials {{ sshd_config.get('GSSAPICleanupCredentials', 'yes') }}
-#GSSAPIStrictAcceptorCheck yes
+#GSSAPIAuthentication no
+{{ option('GSSAPICleanupCredentials', True, comment=True) }}
+{{ option('GSSAPIStrictAcceptorCheck', True, comment=True) }}
 #GSSAPIKeyExchange no
 
 # Set this to 'yes' to enable PAM authentication, account processing,
@@ -84,39 +113,39 @@ GSSAPICleanupCredentials {{ sshd_config.get('GSSAPICleanupCredentials', 'yes') }
 # If you just want the PAM account and session checks to run without
 # PAM authentication, then enable this but set PasswordAuthentication
 # and ChallengeResponseAuthentication to 'no'.
-UsePAM yes
+{{ option('UsePAM', True) }}
 
-#AllowAgentForwarding yes
-#AllowTcpForwarding yes
-#GatewayPorts no
-X11Forwarding yes
-#X11DisplayOffset 10
-#X11UseLocalhost yes
-#PermitTTY yes
-PrintMotd no
-#PrintLastLog yes
-#TCPKeepAlive yes
-#UseLogin no
+{{ option('AllowAgentForwarding', True, comment=True) }}
+{{ option('AllowTcpForwarding', True, comment=True) }}
+{{ option('GatewayPorts', False, comment=True) }}
+{{ option('X11Forwarding', True) }}
+{{ option('X11DisplayOffset', 10, comment=True) }}
+{{ option('X11UseLocalhost', True, comment=True) }}
+{{ option('PermitTTY', True, comment=True) }}
+{{ option('PrintMotd', False) }}
+{{ option('PrintLastLog', True, comment=True) }}
+{{ option('TCPKeepAlive', True, comment=True) }}
+{{ option('UseLogin', False, comment=True) }}
 #UsePrivilegeSeparation sandbox
-#PermitUserEnvironment no
+{{ option('PermitUserEnvironment', False, comment=True) }}
 #Compression delayed
-#ClientAliveInterval 0
-#ClientAliveCountMax 3
-#UseDNS no
-#PidFile /var/run/sshd.pid
-#MaxStartups 10:30:100
-#PermitTunnel no
-#ChrootDirectory none
-#VersionAddendum none
+{{ option('ClientAliveInterval', 0, comment=True) }}
+{{ option('ClientAliveCountMax', 3, comment=True) }}
+{{ option('UseDNS', False, comment=True) }}
+{{ option('PidFile', '/var/run/sshd.pid', comment=True) }}
+{{ option('MaxStartups', '10:30:100', comment=True) }}
+{{ option('PermitTunnel', False, comment=True) }}
+{{ option('ChrootDirectory', 'none', comment=True) }}
+{{ option('VersionAddendum', 'none', comment=True) }}
 
 # no default banner path
-#Banner none
+{{ option('Banner', 'none', comment=True) }}
 
 # Allow client to pass locale environment variables
-AcceptEnv LANG LC_*
+{{ option('AcceptEnv', 'LANG LC_*') }}
 
 # override default of no subsystems
-Subsystem	sftp	/usr/lib/openssh/sftp-server
+{{ option('Subsystem', 'sftp /usr/lib/openssh/sftp-server') }}
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs
