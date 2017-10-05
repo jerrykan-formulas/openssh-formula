@@ -1,82 +1,117 @@
 {%- from "openssh/map.jinja" import sshd_config with context -%}
+
+{%- set processed_options = ['matches'] -%}
+{%- set unprocessed_options = [] -%}
+
+{%- macro option_impl(name, value, comment=False) -%}
+    {%- if comment and name not in sshd_config -%}
+        #
+    {%- endif -%}
+    {{- name ~ ' ' -}}
+    {%- if value is sameas true -%}
+        yes
+    {%- elif value is sameas false -%}
+        no
+    {%- else -%}
+        {{ value }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro option(name, default, comment=False) -%}
+    {%- do processed_options.append(name) -%}
+    {%- set value = sshd_config.get(name, default) -%}
+
+    {%- if value is iterable and value is not string -%}
+        {%- for val in value -%}
+            {{ option_impl(name, val, comment) ~ '\n' }}
+        {%- endfor -%}
+    {%- else -%}
+        {{ option_impl(name, value, comment) }}
+    {%- endif %}
+{%- endmacro -%}
+
 # This file is managed by salt. Manual changes risk being overwritten.
 
 # See the sshd_config(5) manpage for details
 
 # What ports, IPs and protocols we listen for
-Port 22
+{{ option('Port', 22) }}
 # Use these options to restrict which interfaces/protocols sshd will bind to
-#ListenAddress ::
-#ListenAddress 0.0.0.0
-Protocol 2
+{{ option('ListenAddress', [
+    '::',
+    '0.0.0.0',
+], comment=True) -}}
+{{ option('Protocol', 2) }}
 # HostKeys for protocol version 2
-HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_dsa_key
-HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
+{{ option('HostKey', [
+    '/etc/ssh/ssh_host_rsa_key',
+    '/etc/ssh/ssh_host_dsa_key',
+    '/etc/ssh/ssh_host_ecdsa_key',
+    '/etc/ssh/ssh_host_ed25519_key',
+]) -}}
 #Privilege Separation is turned on for security
-UsePrivilegeSeparation yes
+{{ option('UsePrivilegeSeparation', True) }}
 
 # Lifetime and size of ephemeral version 1 server key
-KeyRegenerationInterval 3600
-ServerKeyBits 1024
+{{ option('KeyRegenerationInterval', 3600) }}
+{{ option('ServerKeyBits', 1024) }}
 
 # Logging
-SyslogFacility AUTH
-LogLevel INFO
+{{ option('SyslogFacility', 'AUTH') }}
+{{ option('LogLevel', 'INFO') }}
 
 # Authentication:
-LoginGraceTime 120
-PermitRootLogin {{ sshd_config.get('PermitRootLogin', 'without-password') }}
-StrictModes yes
+{{ option('LoginGraceTime', 120) }}
+{{ option('PermitRootLogin', 'without-password') }}
+{{ option('StrictModes', True) }}
 
-RSAAuthentication yes
-PubkeyAuthentication yes
-#AuthorizedKeysFile	%h/.ssh/authorized_keys
+{{ option('RSAAuthentication', True) }}
+{{ option('PubkeyAuthentication', True) }}
+{{ option('AuthorizedKeysFile', '%h/.ssh/authorized_keys', comment=True) }}
 
 # Don't read the user's ~/.rhosts and ~/.shosts files
-IgnoreRhosts yes
+{{ option('IgnoreRhosts', True) }}
 # For this to work you will also need host keys in /etc/ssh_known_hosts
-RhostsRSAAuthentication no
+{{ option('RhostsRSAAuthentication', False) }}
 # similar for protocol version 2
-HostbasedAuthentication no
+{{ option('HostbasedAuthentication', False) }}
 # Uncomment if you don't trust ~/.ssh/known_hosts for RhostsRSAAuthentication
-#IgnoreUserKnownHosts yes
+{{ option('IgnoreUserKnownHosts', True, comment=True) }}
 
 # To enable empty passwords, change to yes (NOT RECOMMENDED)
-PermitEmptyPasswords no
+{{ option('PermitEmptyPasswords', False) }}
 
 # Change to yes to enable challenge-response passwords (beware issues with
 # some PAM modules and threads)
-ChallengeResponseAuthentication {{ sshd_config.get('ChallengeResponseAuthentication', 'no') }}
+{{ option('ChallengeResponseAuthentication', False) }}
 
 # Change to no to disable tunnelled clear text passwords
-#PasswordAuthentication yes
+{{ option('PasswordAuthentication', True, comment=True) }}
 
 # Kerberos options
-#KerberosAuthentication no
-#KerberosGetAFSToken no
-#KerberosOrLocalPasswd yes
-#KerberosTicketCleanup yes
+{{ option('KerberosAuthentication', False, comment=True) }}
+{{ option('KerberosGetAFSToken', False, comment=True) }}
+{{ option('KerberosOrLocalPasswd', True, comment=True) }}
+{{ option('KerberosTicketCleanup', True, comment=True) }}
 
 # GSSAPI options
-GSSAPIAuthentication {{ sshd_config.get('GSSAPIAuthentication', 'no') }}
-GSSAPICleanupCredentials {{ sshd_config.get('GSSAPICleanupCredentials', 'yes') }}
+{{ option('GSSAPIAuthentication', False, comment=True) }}
+{{ option('GSSAPICleanupCredentials', True, comment=True) }}
 
-X11Forwarding yes
-X11DisplayOffset 10
-PrintMotd no
-PrintLastLog yes
-TCPKeepAlive yes
-#UseLogin no
+{{ option('X11Forwarding', True) }}
+{{ option('X11DisplayOffset', 10) }}
+{{ option('PrintMotd', False) }}
+{{ option('PrintLastLog', True) }}
+{{ option('TCPKeepAlive', True) }}
+{{ option('UseLogin', False, comment=True) }}
 
-#MaxStartups 10:30:60
-#Banner /etc/issue.net
+{{ option('MaxStartups', '10:30:60', comment=True) }}
+{{ option('Banner', '/etc/issue.net', comment=True) }}
 
 # Allow client to pass locale environment variables
-AcceptEnv LANG LC_*
+{{ option('AcceptEnv', 'LANG LC_*') }}
 
-Subsystem sftp /usr/lib/openssh/sftp-server
+{{ option('Subsystem', 'sftp /usr/lib/openssh/sftp-server') }}
 
 # Set this to 'yes' to enable PAM authentication, account processing,
 # and session processing. If this is enabled, PAM authentication will
@@ -87,4 +122,27 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 # If you just want the PAM account and session checks to run without
 # PAM authentication, then enable this but set PasswordAuthentication
 # and ChallengeResponseAuthentication to 'no'.
-UsePAM yes
+{{ option('UsePAM', True) }}
+
+{#- Handling unknown in salt template options -#}
+{%- for name in sshd_config.keys() %}
+    {%- if name not in processed_options %}
+        {%- do unprocessed_options.append(name) -%}
+    {%- endif %}
+{%- endfor %}
+
+{%- if unprocessed_options %}
+
+# Misc Options
+{%- for name in unprocessed_options|sort %}
+{{ option(name, '') }}
+{%- endfor %}
+{%- endif %}
+
+{%- for name, match in sshd_config.get('matches', {})|dictsort %}
+
+Match {{ match['type'].keys()[0] }} {{ match['type'].values()[0] }}
+    {%- for key, value in match['options']|dictsort %}
+    {{ option_impl(key, value) }}
+    {%- endfor %}
+{%- endfor %}
