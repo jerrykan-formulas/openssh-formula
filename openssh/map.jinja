@@ -1,7 +1,7 @@
 {## Start with  defaults from defaults.yaml ##}
 {% import_yaml "openssh/defaults.yaml" as default_settings %}
 
-{%- set distro_release = salt['grains.get']('osmajorrelease') -%}
+{%- set distro_release = salt['grains.get']('osmajorrelease')|string -%}
 {%- set release_dir = {
     'Debian': {
         '8': 'debian8',
