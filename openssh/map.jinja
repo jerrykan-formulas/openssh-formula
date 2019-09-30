@@ -10,7 +10,8 @@
     }.get(distro_release, 'debian10'),
     'RedHat': {
         '7': 'centos7',
-    }.get(distro_release, 'centos7'),
+        '8': 'centos8',
+    }.get(distro_release, 'centos8'),
 }.get(salt['grains.get']('os_family')) -%}
 
 {## 
