@@ -1,0 +1,182 @@
+{%- from "openssh/map.jinja" import sshd_config with context -%}
+
+{%- set processed_options = ['matches'] -%}
+{%- set unprocessed_options = [] -%}
+
+{%- macro option_impl(name, value, comment=False) -%}
+    {%- if comment and name not in sshd_config -%}
+        #
+    {%- endif -%}
+    {{- name ~ ' ' -}}
+    {%- if value is sameas true -%}
+        yes
+    {%- elif value is sameas false -%}
+        no
+    {%- else -%}
+        {{ value }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro option(name, default, comment=False) -%}
+    {%- do processed_options.append(name) -%}
+    {%- set value = sshd_config.get(name, default) -%}
+
+    {%- if value is iterable and value is not string -%}
+        {%- for val in value -%}
+            {{ option_impl(name, val, comment) ~ '\n' }}
+        {%- endfor -%}
+    {%- else -%}
+        {{ option_impl(name, value, comment) }}
+    {%- endif %}
+{%- endmacro -%}
+
+# This file is managed by salt. Manual changes risk being overwritten.
+
+#	$OpenBSD: sshd_config,v 1.100 2016/08/15 12:32:04 naddy Exp $
+
+# This is the sshd server system-wide configuration file.  See
+# sshd_config(5) for more information.
+
+# This sshd was compiled with PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+# The strategy used for options in the default sshd_config shipped with
+# OpenSSH is to specify options with their default value where
+# possible, but leave them commented.  Uncommented options override the
+# default value.
+
+Include /etc/ssh/sshd_config.d/*.conf
+
+{{ option('Port', 22, comment=True) }}
+{{ option('AddressFamily', 'any', comment=True) }}
+{{ option('ListenAddress', [
+    '0.0.0.0',
+    '::',
+], comment=True) }}
+{{ option('HostKey', [
+    '/etc/ssh/ssh_host_rsa_key',
+    '/etc/ssh/ssh_host_ecdsa_key',
+    '/etc/ssh/ssh_host_ed25519_key',
+], comment=True) }}
+# Ciphers and keying
+{{ option('RekeyLimit', 'default none', comment=True) }}
+
+# Logging
+{{ option('SyslogFacility', 'AUTH', comment=True) }}
+{{ option('LogLevel', 'INFO', comment=True) }}
+
+# Authentication:
+
+{{ option('LoginGraceTime', '2m', comment=True) }}
+{{ option('PermitRootLogin', 'prohibit-password', comment=True) }}
+{{ option('StrictModes', True, comment=True) }}
+{{ option('MaxAuthTries', 6, comment=True) }}
+{{ option('MaxSessions', 10, comment=True) }}
+
+{{ option('PubkeyAuthentication', True, comment=True) }}
+
+# Expect .ssh/authorized_keys2 to be disregarded by default in future.
+{{ option('AuthorizedKeysFile', '.ssh/authorized_keys .ssh/authorized_keys2', comment=True) }}
+
+{{ option('AuthorizedPrincipalsFile', 'none', comment=True) }}
+
+{{ option('AuthorizedKeysCommand', 'none', comment=True) }}
+{{ option('AuthorizedKeysCommandUser', 'nobody', comment=True) }}
+
+# For this to work you will also need host keys in /etc/ssh/ssh_known_hosts
+{{ option('HostbasedAuthentication', False, comment=True) }}
+# Change to yes if you don't trust ~/.ssh/known_hosts for
+# HostbasedAuthentication
+{{ option('IgnoreUserKnownHosts', False, comment=True) }}
+# Don't read the user's ~/.rhosts and ~/.shosts files
+{{ option('IgnoreRhosts', True, comment=True) }}
+
+# To disable tunneled clear text passwords, change to no here!
+{{ option('PasswordAuthentication', True, comment=True) }}
+{{ option('PermitEmptyPasswords', False, comment=True) }}
+
+# Change to yes to enable challenge-response passwords (beware issues with
+# some PAM modules and threads)
+{{ option('ChallengeResponseAuthentication', False) }}
+
+# Kerberos options
+#KerberosAuthentication no
+{{ option('KerberosOrLocalPasswd', True, comment=True) }}
+{{ option('KerberosTicketCleanup', True, comment=True) }}
+#KerberosGetAFSToken no
+
+# GSSAPI options
+#GSSAPIAuthentication no
+{{ option('GSSAPICleanupCredentials', True, comment=True) }}
+{{ option('GSSAPIStrictAcceptorCheck', True, comment=True) }}
+#GSSAPIKeyExchange no
+
+# Set this to 'yes' to enable PAM authentication, account processing,
+# and session processing. If this is enabled, PAM authentication will
+# be allowed through the ChallengeResponseAuthentication and
+# PasswordAuthentication.  Depending on your PAM configuration,
+# PAM authentication via ChallengeResponseAuthentication may bypass
+# the setting of "PermitRootLogin without-password".
+# If you just want the PAM account and session checks to run without
+# PAM authentication, then enable this but set PasswordAuthentication
+# and ChallengeResponseAuthentication to 'no'.
+{{ option('UsePAM', True) }}
+
+{{ option('AllowAgentForwarding', True, comment=True) }}
+{{ option('AllowTcpForwarding', True, comment=True) }}
+{{ option('GatewayPorts', False, comment=True) }}
+{{ option('X11Forwarding', True) }}
+{{ option('X11DisplayOffset', 10, comment=True) }}
+{{ option('X11UseLocalhost', True, comment=True) }}
+{{ option('PermitTTY', True, comment=True) }}
+{{ option('PrintMotd', False) }}
+{{ option('PrintLastLog', True, comment=True) }}
+{{ option('TCPKeepAlive', True, comment=True) }}
+{{ option('PermitUserEnvironment', False, comment=True) }}
+#Compression delayed
+{{ option('ClientAliveInterval', 0, comment=True) }}
+{{ option('ClientAliveCountMax', 3, comment=True) }}
+{{ option('UseDNS', False, comment=True) }}
+{{ option('PidFile', '/var/run/sshd.pid', comment=True) }}
+{{ option('MaxStartups', '10:30:100', comment=True) }}
+{{ option('PermitTunnel', False, comment=True) }}
+{{ option('ChrootDirectory', 'none', comment=True) }}
+{{ option('VersionAddendum', 'none', comment=True) }}
+
+# no default banner path
+{{ option('Banner', 'none', comment=True) }}
+
+# Allow client to pass locale environment variables
+{{ option('AcceptEnv', 'LANG LC_*') }}
+
+# override default of no subsystems
+{{ option('Subsystem', 'sftp /usr/lib/openssh/sftp-server') }}
+
+{#- Handling unknown in salt template options -#}
+{%- for name in sshd_config.keys() %}
+    {%- if name not in processed_options %}
+        {%- do unprocessed_options.append(name) -%}
+    {%- endif %}
+{%- endfor %}
+
+{%- if unprocessed_options %}
+
+# Misc Options
+{%- for name in unprocessed_options|sort %}
+{{ option(name, '') }}
+{%- endfor %}
+{%- endif %}
+
+# Example of overriding settings on a per-user basis
+#Match User anoncvs
+#	X11Forwarding no
+#	AllowTcpForwarding no
+#	PermitTTY no
+#	ForceCommand cvs server
+
+{%- for name, match in sshd_config.get('matches', {})|dictsort %}
+
+Match {{ match['type'].keys()[0] }} {{ match['type'].values()[0] }}
+    {%- for key, value in match['options']|dictsort %}
+    {{ option_impl(key, value) }}
+    {%- endfor %}
+{%- endfor %}
